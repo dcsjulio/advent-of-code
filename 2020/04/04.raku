@@ -13,7 +13,7 @@ my @matches = 'input'.IO.slurp ~~ m:g/:r
         | ('ecl:') ['amb'|'blu'|'brn'|'gry'|'grn'|'hzl'|'oth']
         | ('pid:') \d ** 9
         | ('cid:') \S+
-        ] { %fields{$0} = ｢✓｣ }
+        ] { %fields{$0.tail} = ｢✓｣ }
     ]+ % \s \n
     { make %fields.keys.grep(* ne 'cid:').elems }
 /;
