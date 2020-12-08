@@ -10,5 +10,5 @@ say 'Solution 1: ' ~ @sorted-passes.tail;
 
 say 'Solution 2: ' ~ @sorted-passes
         .rotor(2 => -1)
-        .grep({ $^it.tail - $^it.head > 1 })
-        .map(*.head.succ);
+        .grep({ -1 != [-] @^them })
+        .map: *.head.succ;
