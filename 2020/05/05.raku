@@ -4,7 +4,7 @@ sub get-id($boarding-pass) {
     $boarding-pass.trans('BFLR' => '1001') andthen "0b$_".Int
 }
 
-my @sorted-passes = 'input'.IO.lines.map({ get-id $_ }).sort;
+my @sorted-passes = 'input'.IO.lines.map(&get-id).sort;
 
 say 'Solution 1: ' ~ @sorted-passes.tail;
 
