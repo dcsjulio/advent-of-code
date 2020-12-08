@@ -1,7 +1,7 @@
 #!/usr/bin/env raku
 
 sub get-id($boarding-pass) {
-    $boarding-pass.trans('BFLR' => '1001') andthen "0b$_".Int
+    $boarding-pass.trans('BFLR' => '1001').parse-base: 2
 }
 
 my @sorted-passes = 'input'.IO.lines.map(&get-id).sort;
