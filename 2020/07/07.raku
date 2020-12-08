@@ -36,4 +36,3 @@ sub count-childs($bag-name) {
 }
 
 say 'Case 2: ' ~ count-childs('shiny gold');
-
