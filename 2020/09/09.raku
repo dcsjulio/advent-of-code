@@ -2,8 +2,7 @@
 
 constant BLOCK = 25;
 
-my $file-content = 'input'.IO.slurp;
-my @numbers = $file-content.lines>>.Int;
+my @numbers = 'input'.IO.slurp.lines>>.Int;
 
 ## CASE 1: ##
 
