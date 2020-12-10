@@ -11,7 +11,7 @@ sub valid-pair($idx) {
     @numbers[$idx], so @numbers[$idx] == none @compared-to
 }
 
-my $weak = (BLOCK .. @numbers.elems.pred).map(&valid-pair).first(*.tail).map(*.head).head;
+my $weak = (BLOCK .. @numbers.elems.pred).race.map(&valid-pair).first(*.tail).map(*.head).head;
 
 say 'CASE 1: ' ~ $weak;
 
@@ -20,3 +20,4 @@ say 'CASE 1: ' ~ $weak;
 @numbers.reverse.join("\n") ~~ m:g/^^[(\d+:) \s*: <?{$0.sum <= $weak}>] **? 2..* <?{$0.sum == $weak}> .*/ or die;
 
 $0.head>>.Int.sort.list andthen say 'CASE 2: ' ~ .min + .max;
+
