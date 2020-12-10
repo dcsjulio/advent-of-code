@@ -13,10 +13,10 @@ sub get-parents($bag-name) is cached {
 
 sub get-top($bag-name) {
     my @parents = get-parents $bag-name;
-    (|@parents, @parents.map(&get-top))
+    (|@parents, |@parents.map(&get-top)).unique
 }
 
-say 'Case 1: ' ~ get-top('shiny gold').flat.unique.elems;
+say 'Case 1: ' ~ get-top('shiny gold').elems;
 
 ## CASE 2: ##
 
