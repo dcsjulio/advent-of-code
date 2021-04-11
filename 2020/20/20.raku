@@ -2,11 +2,7 @@
 
 role Flippable {
     has @.inner-data;
-    has $.number-flips = 0;
-
-    method restore-flip-counter {
-        $!number-flips = 0
-    }
+    has $.number-flips is rw = 0;
 
     method print-it {
         for @!inner-data { .say }
@@ -36,59 +32,21 @@ role Flippable {
     }
 }
 
-class MonsterMap does Flippable {
-    has $.number-of-monsters = 0;
-
-    submethod BUILD(:@!inner-data) {}
-
-    method find-monsters {
-        for ^8 {
-            self!mark-monsters;
-            last if $!number-of-monsters > 0;
-            self!flip-it;
-        }
-    }
-
-    method water-roughness {
-        @!inner-data.map({ elems m:g/'#'/ }).sum
-    }
-
-    method !mark-monsters {
-        my $count = 0;
-        my $data = @!inner-data.join: "\n";
-        while $data ~~ s:g/ :my $len = 0;
-        ^^(\N*?)        (\N**18)'#'(.) (\N*\n) { $len = (~$0).chars.Int }
-        ^^(\N**:{$len}) '#'(....)'##'(....)'##'(....)'###' (\N*\n)
-        ^^(\N**:{$len}) (.)'#'(..)'#'(..)'#'(..)'#'(..)'#'(..)'#'(...) { $count++ }
-        /$0$1O$2$3$4O$5OO$6OO$7OOO$8$9$10O$11O$12O$13O$14O$15O$16/ {};
-        $!number-of-monsters += $count;
-        @!inner-data = $data.split: "\n"
-    }
-}
-
 class Tile does Flippable {
     has ($.top, $.right, $.bottom, $.left, $.id, $.state);
 
     submethod BUILD(:$input) {
-        self!parse: $input;
-        $!state = 0;
-    }
-
-    method !parse($input) {
         my @data := $input.lines[1..*].list;
 
         $!id = +~($input ~~ m/Tile \h+ <(\d+)>/);
 
         ($!top, $!right, $!bottom, $!left) =
-            @data[0], @data.map({.substr: *-1, 1}).join,
-            @data[*-1], @data.map({.substr: 0, 1}).join;
+                @data[0], @data.map({.substr: *-1, 1}).join,
+                @data[*-1], @data.map({.substr: 0, 1}).join;
 
-        @!inner-data = @data[1 .. *-2].map: *.subst: /^.|.$/, :g
-    }
+        @!inner-data = @data[1 .. *-2].map: *.subst: /^.|.$/, :g;
 
-    method flip-to-state {
-        self.restore-flip-counter;
-        for 1 .. $!state { self!flip-it }
+        $!state = 0
     }
 
     method flip-x-borders {
@@ -115,7 +73,6 @@ class Tile does Flippable {
         ($!top, $!right, $!bottom, $!left) = $!right, $!bottom.flip, $!left, $!top.flip
     }
 
-
     method flip-borders {
         given ++$!number-flips {
             when 1     { self.flip-x-borders }
@@ -129,14 +86,21 @@ class Tile does Flippable {
     method no-more-flips {
         $!number-flips >= 7
     }
+
+    method flip-to-state {
+        $!number-flips = 0;
+        for 1 .. $!state { self!flip-it }
+    }
 }
 
 class SensorGroup {
     has ($.side, $!index, $!flip-root);
     has (@!tiles, @!tested-units is default(0), @!used-ids, @!tile-map);
 
-    submethod BUILD(:$input) {
-        self!parse: $input;
+    submethod BUILD(:$data) {
+        my @str-tiles = $data.split(/\n <before 'Tile'>/).list;
+        $!side = @str-tiles.elems.sqrt.Int;
+        for @str-tiles { @!tiles.push: Tile.new: :$^input }
         $!index = 0
     }
 
@@ -156,16 +120,6 @@ class SensorGroup {
                 .rotor($!side)
                 .map({ ([Z] $_).map: *.join })
                 .flat
-    }
-
-    method !parse($data) {
-        my @str-tiles = $data.split(/\n <before 'Tile'>/).list;
-        $!side = @str-tiles.elems.sqrt.Int;
-        for @str-tiles { @!tiles.push: Tile.new: :$^input }
-    }
-
-    method !flip-whole-data {
-        for @!tile-map { .flip-to-state }
     }
 
     method !make-guess {
@@ -205,7 +159,7 @@ class SensorGroup {
     }
 
     method !remove-last-tile {
-        @!tile-map[$!index].restore-flip-counter;
+        @!tile-map[$!index].number-flips = 0;
         pop @!tile-map;
         pop @!used-ids
     }
@@ -222,9 +176,41 @@ class SensorGroup {
         my $ok-top = $y == 0 || @!tile-map[$!index].top eq @!tile-map[$!index - $!side].bottom;
         $ok-left && $ok-top
     }
+
+    method !flip-whole-data {
+        for @!tile-map { .flip-to-state }
+    }
 }
 
-my $sensor-group = SensorGroup.new: input => 'input'.IO.slurp;
+class MonsterMap does Flippable {
+    has $.number-of-monsters = 0;
+
+    method find-monsters {
+        for ^8 {
+            self!mark-monsters;
+            last if $!number-of-monsters > 0;
+            self!flip-it;
+        }
+    }
+
+    method water-roughness {
+        @!inner-data.map({ elems m:g/'#'/ }).sum
+    }
+
+    method !mark-monsters {
+        my $count = 0;
+        my $data = @!inner-data.join: "\n";
+        while $data ~~ s:g/ :my $len = 0;
+        ^^(\N*?)        (\N**18)'#'(.) (\N*\n) { $len = (~$0).chars.Int }
+        ^^(\N**:{$len}) '#'(....)'##'(....)'##'(....)'###' (\N*\n)
+        ^^(\N**:{$len}) (.)'#'(..)'#'(..)'#'(..)'#'(..)'#'(..)'#'(...) { $count++ }
+        /$0$1O$2$3$4O$5OO$6OO$7OOO$8$9$10O$11O$12O$13O$14O$15O$16/ {};
+        $!number-of-monsters += $count;
+        @!inner-data = $data.split: "\n"
+    }
+}
+
+my $sensor-group = SensorGroup.new: data => 'input'.IO.slurp;
 $sensor-group.arrange;
 say 'CASE 1: ' ~ [*] $sensor-group.get-corners;
 
