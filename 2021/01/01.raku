@@ -7,4 +7,4 @@ sub count-levels(@items) {
 my @input := 'input'.IO.lines>>.Int;
 
 say 'Solution 1: ' ~ count-levels @input;
-say 'Solution 2: ' ~ count-levels @input.rotor(3 => -2).map({ [+] $_ });
+say 'Solution 2: ' ~ count-levels @input.rotor(3 => -2).map: { [+] $_ };
