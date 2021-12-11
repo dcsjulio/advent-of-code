@@ -20,7 +20,7 @@ sub solution($input, :$filter) {
 sub remove-data($content, :$filter) {
     $content.subst: /:r
         ^^  (\d+) ',' (\d+) ' -> ' (\d+) ',' (\d+) [\n|$]
-            <?{ $filter && $0 != $2 and $1 != $3 }> /, '', :g
+            <?{ $filter && $0 != $2 && $1 != $3 }> /, '', :g
 }
 
 sub parse-line($line) {
