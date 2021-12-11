@@ -2,13 +2,13 @@
 
 multi sub MAIN(Bool :$tests where !*) {
     my $input = 'input'.IO.slurp;
-    say 'Solution 1: ' ~ solution($input, &filter-hv);
-    say 'Solution 2: ' ~ solution($input, &filter-dhv);
+    say 'Solution 1: ' ~ solution($input, :filter);
+    say 'Solution 2: ' ~ solution($input);
 }
 
-sub solution($input, $filter) {
+sub solution($input, :$filter) {
     my %seen-points;
-    my @vectors = remove-data($input, $filter).lines.map: &parse-line;
+    my @vectors = remove-data($input, :$filter).lines.map: &parse-line;
     for @vectors -> @vector {
         for get-middle-points(@vector) -> $point {
             save-point %seen-points, $point;
@@ -17,18 +17,10 @@ sub solution($input, $filter) {
     count-overlapped %seen-points;
 }
 
-sub remove-data($content, $condition) {
+sub remove-data($content, :$filter) {
     $content.subst: /:r
         ^^  (\d+) ',' (\d+) ' -> ' (\d+) ',' (\d+) [\n|$]
-            <?{ $condition(($0, $2), ($1, $3)) }> /, '', :g
-}
-
-sub filter-hv(@x, @y) {
-    [ne] @x and [ne] @y
-}
-
-sub filter-dhv(@x, @y) {
-    filter-hv @x, @y and abs([-] @x) != abs [-] @y
+            <?{ $filter && $0 != $2 and $1 != $3 }> /, '', :g
 }
 
 sub parse-line($line) {
@@ -60,25 +52,25 @@ multi sub MAIN(Bool :$tests where *) {
 
     say "Running day05 tests...";
 
-    plan 16;
+    plan 17;
 
     my ($test, $input, $result);
 
     $test = 'Keeps single line - same y';
     $input = '0,9 -> 5,9';
-    is remove-data($input, &filter-hv), $input, $test;
+    is remove-data($input, :filter), $input, $test;
 
     $test = 'Keeps single line - same x';
     $input = '0,9 -> 0,1';
-    is remove-data($input, &filter-hv), $input, $test;
+    is remove-data($input, :filter), $input, $test;
 
     $test = 'Keeps single line with newline';
     $input = "0,9 -> 5,9\n";
-    is remove-data($input, &filter-hv), $input, $test;
+    is remove-data($input, :filter), $input, $test;
 
     $test = 'Filters single';
     $input = '0,9 -> 5,8';
-    is remove-data($input, &filter-hv), '', $test;
+    is remove-data($input, :filter), '', $test;
 
     my $example = q:to/END/;
     0,9 -> 5,9
@@ -103,7 +95,7 @@ multi sub MAIN(Bool :$tests where *) {
     END
 
     $test = 'Can filter example input';
-    is remove-data($example, &filter-hv), $example-output, $test;
+    is remove-data($example, :filter), $example-output, $test;
 
     $test = 'Can parse line';
     $input = '7,0 -> 7,4';
@@ -152,7 +144,7 @@ multi sub MAIN(Bool :$tests where *) {
 
     $test = 'Can solve first example';
     $result = 5;
-    is solution($example, &filter-hv), $result, $test;
+    is solution($example, :filter), $result, $test;
 
     ## Case 2
 
@@ -169,11 +161,15 @@ multi sub MAIN(Bool :$tests where *) {
     5,5 -> 8,2
     END
 
-    $test = 'Can filter example input';
-    is remove-data($example, &filter-dhv), $example-output, $test;
+    $test = 'Doesn\'t filter diagonals';
+    is remove-data($example), $example-output, $test;
 
     $test = 'Can get diagonal middle points';
     $input = ((1,1),(3,3));
     $result = ('1,1', '2,2', '3,3');
     is get-middle-points($input), $result, $test;
+
+    $test = 'Can solve second example';
+    $result = 12;
+    is solution($example), $result, $test;
 }
