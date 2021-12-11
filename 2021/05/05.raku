@@ -14,7 +14,7 @@ sub solution($input, :$filter) {
             save-point %seen-points, $point;
         }
     }
-    count-overlapped %seen-points;
+    count-overlapped %seen-points
 }
 
 sub remove-data($content, :$filter) {
@@ -40,7 +40,7 @@ sub save-point(%counter, $point) {
 }
 
 sub count-overlapped(%counter) {
-    elems %counter.pairs.grep: { .value > 1 };
+    elems %counter.pairs.grep: { .value > 1 }
 }
 
 #################################################
