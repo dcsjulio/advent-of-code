@@ -1,17 +1,6 @@
 #!/usr/bin/env raku
 
-constant SEGMENT_DIGITS = {
-    'abcefg'  => 0,
-    'cf'      => 1,
-    'acdeg'   => 2,
-    'acdfg'   => 3,
-    'bcdf'    => 4,
-    'abdfg'   => 5,
-    'abdefg'  => 6,
-    'acf'     => 7,
-    'abcdefg' => 8,
-    'abcdfg'  => 9
-};
+enum SEGMENT_DIGITS <abcefg cf acdeg acdfg bcdf abdfg abdefg acf abcdefg abcdfg>;
 
 multi sub MAIN(Bool :$tests where !*) {
     my $input = 'input'.IO.slurp;
@@ -31,26 +20,27 @@ sub solve-and-add($input) {
 }
 
 sub get-guesses-and-digits($input) {
-    $input.lines.map({ Pair.new: | $^it.split(' | ').map(*.words.list) })
+    $input.lines.map: { Pair.new: | .split(' | ').map(*.words.list) }
 }
 
 sub get-real-numbers($line-data) {
     $line-data.value.words
             .map(*.trans: get-trans-string($line-data) => 'abcdefg')
             .map(*.comb.sort.join)
-            .map({ SEGMENT_DIGITS{$_} })
-            .trans(' ' => '').Int
+            .map({ SEGMENT_DIGITS.enums.grep: *.key eq $^it })
+            .map(*.head.value)
+            .join.Int
 }
 
 sub get-trans-string($line-data) {
     my %by-length = get-common-by-length $line-data;
 
-    my $a = ~[∩] (3, 5, 6).map: { %by-length{$_} };
-    my $f = ~[∩] (2, 3, 4, 6).map: { %by-length{$_} };
-    my $d = ~[∩] (4, 5).map: { %by-length{$_} };
-    my $b = ~(([∩] (4, 6).map: { %by-length{$_} }) ∖ $f);
-    my $c = ~(([∩] (2, 3, 4).map: { %by-length{$_} }) ∖ $f);
-    my $g = ~(([∩] (5, 6).map: { %by-length{$_} }) ∖ $a);
+    my $a = ~[∩] %by-length<3 5 6>;
+    my $f = ~[∩] %by-length<2 3 4 6>;
+    my $d = ~[∩] %by-length<4 5>;
+    my $b = ~(([∩] %by-length<4 6>) ∖ $f);
+    my $c = ~(([∩] %by-length<2 3 4>) ∖ $f);
+    my $g = ~(([∩] %by-length<5 6>) ∖ $a);
     my $e = ~(%by-length<7> ∖ [∪] $a, $b, $c, $d, $f, $g);
 
     "$a$b$c$d$e$f$g"
