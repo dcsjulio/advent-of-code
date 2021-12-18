@@ -27,7 +27,7 @@ sub count-simple($input) {
 }
 
 sub solve-and-add($input) {
-    [+] get-guesses-and-digits($input).map({ get-real-numbers $_ })
+    [+] get-guesses-and-digits($input).map: &get-real-numbers
 }
 
 sub get-guesses-and-digits($input) {
