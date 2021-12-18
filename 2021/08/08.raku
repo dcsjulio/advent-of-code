@@ -39,8 +39,7 @@ sub get-real-numbers($line-data) {
             .map(*.trans: get-trans-string($line-data) => 'abcdefg')
             .map(*.comb.sort.join)
             .map({ SEGMENT_DIGITS{$_} })
-            .trans(' ' => '')
-            .Int
+            .trans(' ' => '').Int
 }
 
 sub get-trans-string($line-data) {
@@ -58,14 +57,9 @@ sub get-trans-string($line-data) {
 }
 
 sub get-common-by-length($line-data) {
-    my %by-length;
-    $line-data.key.words.map: {
-        if %by-length{$_.chars}:exists {
-            %by-length{$_.chars} ∩= $_.comb;
-        }
-        else {
-            %by-length{$_.chars} ∪= $_.comb;
-        }
+    my %by-length is default(Set.new('abcdefg'.comb));
+    for $line-data.key.words {
+        %by-length{.chars} ∩= .comb;
     }
     %by-length
 }
