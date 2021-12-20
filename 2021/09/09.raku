@@ -1,5 +1,7 @@
 #!/usr/bin/env raku
 
+constant \SHIFT = ((-1, 0),(0, 1),(1, 0),(0, -1));
+
 multi sub MAIN(Bool :$tests where !*) {
     my $input = 'input'.IO.slurp;
     say 'Solution 1: ' ~ [+] get-risk-levels $input;
@@ -7,28 +9,27 @@ multi sub MAIN(Bool :$tests where !*) {
 }
 
 sub get-risk-levels($input) {
-    my $width = $input.words.head.chars;
-    my $height = $input.lines.elems;
-    my $input-list = parse-input add-borders $input;
-    ((1 ... $height) X (1 ... $width))
-            .map({ get-risk $input-list, |$_ })
-            .grep: * > 0
+    my $w = $input.words.head.chars;
+    my $h = $input.lines.elems;
+    my $matrix = parse-input add-borders $input;
+    ((1 ... $h) X (1 ... $w)).map({ get-risk $matrix, |$_ }).grep: * > 0
 }
 
-sub get-risk($list, $y, $x) {
-    my $t = $list[$y - 1;$x    ];
-    my $r = $list[$y    ;$x + 1];
-    my $b = $list[$y + 1;$x    ];
-    my $l = $list[$y    ;$x - 1];
-    my $c = $list[$y    ;$x    ];
+sub get-risk($matrix, $y, $x) {
+    my $t = $matrix[$y - 1;$x    ];
+    my $r = $matrix[$y    ;$x + 1];
+    my $b = $matrix[$y + 1;$x    ];
+    my $l = $matrix[$y    ;$x - 1];
+    my $c = $matrix[$y    ;$x    ];
     $c < $t & $r & $b & $l ?? $c + 1 !! 0
 }
 
 sub find-top3-basins($input) {
-    my $width = $input.words.head.chars;
-    my $height = $input.lines.elems;
-    my $matrix = parse-input add-borders $input;
-    find-bigger-basins $matrix, $height, $width
+    my $*matrix = parse-input add-borders $input;
+    my %*seen;
+    my $w = $*matrix.head.elems - 2;
+    my $h = $*matrix.elems - 2;
+    (((1 ... $h) X (1 ... $w)).map({ get-basin-size |$_ }).sort.reverse)[^3]
 }
 
 sub add-borders($input) {
@@ -38,26 +39,14 @@ sub add-borders($input) {
 }
 
 sub parse-input($input) {
-    $input.words.map: *.comb>>.Int
+    $input.words.map(*.comb>>.Int).list
 }
 
-sub find-bigger-basins($matrix, $height, $width) {
-    my %seen;
-    (((1 ... $height) X (1 ... $width))
-            .map({ get-basin-size $matrix, |$_, %seen })
-            .sort.reverse
-    )[^3]
-}
-
-multi get-basin-size($matrix, $y, $x, %seen where $matrix[$y;$x] == 9) { 0 }
-multi get-basin-size($matrix, $y, $x, %seen where so %seen{"$y;$x"})   { 0 }
-multi get-basin-size($matrix, $y, $x, %seen) {
-    %seen{"$y;$x"} = True;
-
-    1   + get-basin-size($matrix, $y - 1, $x    , %seen)
-        + get-basin-size($matrix, $y    , $x + 1, %seen)
-        + get-basin-size($matrix, $y + 1, $x    , %seen)
-        + get-basin-size($matrix, $y    , $x - 1, %seen)
+multi get-basin-size($y, $x where $*matrix[$y;$x] == 9) { 0 }
+multi get-basin-size($y, $x where so %*seen{"$y;$x"})   { 0 }
+multi get-basin-size($y, $x) {
+    %*seen{"$y;$x"} = True;
+    [+] 1, |SHIFT.map: { get-basin-size |($_ Z+ $y, $x) }
 }
 
 #################################################
@@ -71,7 +60,7 @@ multi sub MAIN(Bool :$tests where *) {
 
     plan 15;
 
-    my ($input, $test, $result, $matrix, $y, $x);
+    my ($input, $test, $result, $*matrix, %*seen, $y, $x);
 
     $test = 'Can parse input';
     $input = q:to/END/;
@@ -177,7 +166,7 @@ multi sub MAIN(Bool :$tests where *) {
     $result = 15;
     is get-risk-levels($input).sum, $result, $test;
 
-    $matrix = (
+    $*matrix = (
         (9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9),
         (9, 2, 1, 9, 9, 9, 4, 3, 2, 1, 0, 9),
         (9, 3, 9, 8, 7, 8, 9, 4, 9, 2, 1, 9),
@@ -190,22 +179,26 @@ multi sub MAIN(Bool :$tests where *) {
     $test = 'Can get example 1,2 basin';
     ($y, $x) = 1, 2;
     $result = 3;
-    is get-basin-size($matrix, $y, $x, {}), $result, $test;
+    %*seen = {};
+    is get-basin-size($y, $x), $result, $test;
 
     $test = 'Can gen example 1,10 basin';
     ($y, $x) = 1, 10;
     $result = 9;
-    is get-basin-size($matrix, $y, $x, {}), $result, $test;
+    %*seen = {};
+    is get-basin-size($y, $x), $result, $test;
 
     $test = 'Can gen example 3,3 basin';
     ($y, $x) = 3, 3;
     $result = 14;
-    is get-basin-size($matrix, $y, $x, {}), $result, $test;
+    %*seen = {};
+    is get-basin-size($y, $x), $result, $test;
 
     $test = 'Can gen example 5,7 basin';
     ($y, $x) = 5, 7;
     $result = 9;
-    is get-basin-size($matrix, $y, $x, {}), $result, $test;
+    %*seen = {};
+    is get-basin-size($y, $x), $result, $test;
 
     $test = 'Can solve first example';
     $result = 1134;
