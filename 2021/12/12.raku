@@ -61,7 +61,7 @@ multi sub MAIN(Bool :$tests where *) {
 
     plan 9;
 
-    my ($input, $test, $result, $current, $new, %cache);
+    my ($input, $test, $result, %cache);
 
     $test = 'Can parse simple input';
     $input = 'LA-sn';
